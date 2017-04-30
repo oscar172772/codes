@@ -60,7 +60,7 @@ void get_fail()
         }
     }
 }
-inline int pipei(char str[])//·µ»ØÆ¥Åä³É¹¦´ÎÊý 
+inline int pipei(char str[])//Â·ÂµÂ»Ã˜Ã†Â¥Ã…Ã¤Â³Ã‰Â¹Â¦Â´ÃŽÃŠÃ½ 
 {
     node *cur=root;
     int cnt=0,index,len=strlen(str);
