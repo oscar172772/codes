@@ -96,7 +96,7 @@ void bt(int x)
 	root->pa=rf;
 	root->num=x;
 	update(root);
-}//ÌØÅÐ n+1ºÍ 0 
+}//ÃŒÃ˜Ã…Ã n+1ÂºÃ 0 
 node* Find(node *cur,int pos)
 {
 	if(pos==0||pos>cur->size)return 0;
