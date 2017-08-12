@@ -1,87 +1,92 @@
 #include<iostream>
 #include<cstdio>
-#include<queue>
 #include<cstring>
+#include<deque>
 using namespace std;
-const int MAXN=1010,MAXM=50010;
-const int S=1000,T=1001,SHIFT=100;
+const int MAXN=1010,MAXM=50010,SHIFT=100;
 struct edge
 {
-	int v;
-	int f;
-	edge *next,*rev;
+    int v,f,w;
+    edge *next,*rev;
 }*h[MAXN],pool[MAXM*2];
 int top;
-inline void addedge(int u,int v,int c)
+inline void addedge(int u,int v,int c,int w)
 {
-	edge *tmp=&pool[top++];tmp->v=v;tmp->next=h[u];h[u]=tmp;tmp->f=c;
-	edge *pmt=&pool[top++];pmt->v=u;pmt->next=h[v];h[v]=pmt;pmt->f=0;
-	tmp->rev=pmt;pmt->rev=tmp;
+    //cout<<"addedge("<<u<<','<<v<<','<<c<<','<<w<<")\n";
+    edge *tmp=&pool[top++];tmp->v=v;tmp->f=c;tmp->w=w;tmp->next=h[u];h[u]=tmp;
+    edge *pmt=&pool[top++];pmt->v=u;pmt->f=0;pmt->w=-w;pmt->next=h[v];h[v]=pmt;
+    tmp->rev=pmt;pmt->rev=tmp;
 }
-queue<int> q;
-int level[MAXN];
+deque<int> q;
 int S,T;
-inline bool mklevel()
+int last[MAXN],inq[MAXN];
+long long dis[MAXN],maxf[MAXN];
+edge *laste[MAXN];
+int totcost,totflow;
+bool SPFA()
 {
-	while(!q.empty())q.pop();
-	memset(level,-1,sizeof(level));
-	q.push(S);
-	level[S]=0;
-	while(!q.empty())
-	{
-		int u=q.front();q.pop();
-		for(edge *tmp=h[u];tmp;tmp=tmp->next)
-		{
-			if(level[tmp->v]==-1&&tmp->f)
-			{
-				level[tmp->v]=level[u]+1;
-				q.push(tmp->v);
-			}
-		}
-		if(level[T]!=-1)return true;
-	}
-	return false;
-}
-int dinic(int u,int minf)
-{
-	//cout<<"dinic("<<u<<','<<minf<<")\n";
-	if(u==T)return minf;
-	int totf=0;
-	for(edge *tmp=h[u];tmp;tmp=tmp->next)
-	{
-		if(tmp->f&&level[tmp->v]==level[u]+1)
-		{
-			int f=dinic(tmp->v,min(minf-totf,tmp->f));
-			tmp->f-=f;
-			tmp->rev->f+=f;
-			totf+=f;
-			if(totf==minf)break;
-		}
-	}
-	if(totf==0)level[u]=-1;
-	return totf;
+    memset(dis,0x3f,sizeof(dis));
+    memset(last,0,sizeof(last));
+    memset(maxf,0,sizeof(maxf));
+    memset(inq,0,sizeof(inq));
+    while(!q.empty())q.pop_front();
+    q.push_front(S);
+    maxf[S]=0x3f3f3f3f3f3f3f3fll;
+    inq[S]=1;
+    dis[S]=0;
+    while(!q.empty())
+    {
+        int u=q.front();q.pop_front();
+        inq[u]=0;
+        //cout<<"SPFA("<<u<<",dis = "<<dis[u]<<",maxFlow = "<<maxf[u]<<",last = "<<last[u]<<")\n";
+        for(edge *tmp=h[u];tmp;tmp=tmp->next)
+        {
+            if(tmp->f&&dis[tmp->v]>dis[u]+tmp->w)
+            {
+                dis[tmp->v]=dis[u]+tmp->w;
+                last[tmp->v]=u;
+                maxf[tmp->v]=max(maxf[tmp->v],min(maxf[u],(long long)tmp->f));
+                laste[tmp->v]=tmp;
+                if(!inq[tmp->v])
+                {
+                    if(q.empty()||dis[q.front()]>tmp->v)q.push_front(tmp->v);
+                    else q.push_back(tmp->v);
+                    inq[tmp->v]=1;
+                }
+            }
+        }
+    }
+    if(dis[T]>=0x3f3f3f3f3f3f3f3fll)return false;
+    int u=T;
+    while(last[u])
+    {
+        //cout<<u<<endl;
+        laste[u]->f-=maxf[T];
+        laste[u]->rev->f+=maxf[T];
+        u=last[u];
+    }
+    totcost+=dis[T]*maxf[T];
+    totflow+=maxf[T];
+    return true;
 }
 int n,m;//n customers, m technicians
-int time[11][65];
+int tim[11][65];
 int main()
 {
-	scanf("%d%d",&m,&n);
-	for(int i=1;i<=n;i++)
-		for(int j=1;j<=m;j++)
-			scanf("%d",&time[i][j]);
-	for(int i=1;i<=n;i++)
-	{
-		for(int j=1;j<=m;j++)
-		{
-			for(int k=1;k<=n;k++)
-			{
-				addedge(i,j+k*(m+1)+SHIFT,1,time[i][j]*k);
-			}
-		}
-	}
-	long long totf=0;
-	
-	while(mklevel())totf+=dinic(S,0x7fffffff);
-	printf("%lld\n",totf);
-	return 0;
+    scanf("%d%d",&m,&n);
+    S=1000,T=1001;
+    for(int i=1;i<=n;i++)
+        for(int j=1;j<=m;j++)
+            scanf("%d",&tim[i][j]);
+    for(int i=1;i<=n;i++)addedge(S,i,1,0);
+    for(int j=1;j<=m;j++)
+        for(int k=1;k<=n;k++)
+            addedge(j+k*(m+1)+SHIFT,T,1,0);
+    for(int i=1;i<=n;i++)
+        for(int j=1;j<=m;j++)
+            for(int k=1;k<=n;k++)
+                addedge(i,j+k*(m+1)+SHIFT,1,tim[i][j]*k);
+    while(SPFA());
+    printf("%.2lf\n",(double)totcost/n);
+    return 0;
 }
